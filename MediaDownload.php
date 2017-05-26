@@ -5,7 +5,7 @@ class MediaDownload
     protected $_productCollection;
     protected $_vDefaultStoreCode = 'default';
     protected $_bOnlyInStock = true;
-    protected $_bUseAria2c = false;
+    protected $_bUseAria2c = true;
     protected $_vRemoteBaseUrl = 'http://www.example.com/media';
 
     public function __construct()
