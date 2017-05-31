@@ -101,6 +101,10 @@ class MediaDownload
     public function downloadImages()
     {
         $aImages = $this->getMissingImages();
+        if (!$aImages){
+            echo "no missing images \n";
+            return ;
+        }
         $vPath = $this->writeImages($aImages);
         $vRemoteBaseUrl = $this->_vRemoteBaseUrl;
 
