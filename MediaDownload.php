@@ -3,6 +3,7 @@
 class MediaDownload
 {
     protected $_productCollection;
+    protected $_categoryCollection;
     protected $_vDefaultStoreCode = 'default';
     protected $_bOnlyInStock = true;
     protected $_bUseAria2c = true;
@@ -78,20 +79,52 @@ class MediaDownload
         return $aImages;
     }
 
-    protected function getMissingImages()
+    /**
+     * @return Mage_Catalog_Model_Resource_Category_Collection
+     */
+    protected function getCategoryCollection()
     {
-        $aImages = $this->getImages();
-        $vBasePath = Mage::getBaseDir('media') . '/catalog/product';
-        $aMissingImages = [];
+        if (is_null($this->_categoryCollection)) {
+            $this->_categoryCollection = Mage::getModel('catalog/category')->getCollection()
+                ->addAttributeToSelect('image');
+        }
+        return $this->_categoryCollection;
+    }
+    protected function getCategoryImagesList()
+    {
+        $cCategory = $this->getCategoryCollection();
+        $aImage =  $cCategory->getColumnValues('image');
+        $aImage = array_unique($aImage);
+        return $aImage;
+    }
+
+    protected function getMissingImages($vTarget,$aExistingList)
+    {
+        if ($vTarget=='product'){
+            $aImages = $this->getImages();
+        }
+        elseif($vTarget='category'){
+            $aImages = $this->getCategoryImagesList();
+        }
+        else{
+            throw new Exception('target not correct: ' . $vTarget);
+        }
+
+        $vBasePath = Mage::getBaseDir('media') . "/catalog/$vTarget";
+        $aMissingImages = $aExistingList;
         foreach ($aImages as $vImage) {
+            if ($vImage=='no_selection'){
+                continue;
+            }
+            $vImage = '/' . ltrim($vImage,'/');
             $vFullPath = $vBasePath . $vImage;
             if (!file_exists($vFullPath)) {
                 if ($this->_bUseAria2c) {
-                    $aMissingImages[] = $this->_vRemoteBaseUrl . '/catalog/product' . $vImage;
-                    $aMissingImages[] = "   out=" . "media/catalog/product" . $vImage;
+                    $aMissingImages[] = $this->_vRemoteBaseUrl . "/catalog/$vTarget" . $vImage;
+                    $aMissingImages[] = "   out=" . "media/catalog/$vTarget" . $vImage;
                 }
                 else {
-                    $aMissingImages[] = '/media/catalog/product' . $vImage;
+                    $aMissingImages[] = "/media/catalog/$vTarget" . $vImage;
                 }
             }
         }
@@ -100,7 +133,9 @@ class MediaDownload
 
     public function downloadImages()
     {
-        $aImages = $this->getMissingImages();
+        $aImages = $this->getMissingImages('product',[]);
+        $aImages = $this->getMissingImages('category',$aImages);
+
         if (!$aImages){
             echo "no missing images \n";
             return ;
