@@ -7,6 +7,7 @@ class MediaDownload
     protected $_vDefaultStoreCode = 'default';
     protected $_bOnlyInStock = true;
     protected $_bUseAria2c = true;
+    protected $_vFullMagentoPath = '';
     protected $_vRemoteBaseUrl = 'http://www.example.com/media';
 
     public function __construct()
@@ -30,7 +31,12 @@ class MediaDownload
     {
         if (!@class_exists('Mage', false)) {
             ini_set('display_errors', 1);
-            require_once 'app/Mage.php';
+            if ($this->_vFullMagentoPath){
+                require_once $this->_vFullMagentoPath;
+            }
+            else{
+                require_once 'app/Mage.php';
+            }
             Mage::app();
             Mage::setIsDeveloperMode(true);
 
@@ -113,10 +119,10 @@ class MediaDownload
         $vBasePath = Mage::getBaseDir('media') . "/catalog/$vTarget";
         $aMissingImages = $aExistingList;
         foreach ($aImages as $vImage) {
-            if ($vImage=='no_selection'){
+            $vImage = '/' . ltrim($vImage,'/');
+            if (in_array($vImage, ['/no_selection', '/'])) {
                 continue;
             }
-            $vImage = '/' . ltrim($vImage,'/');
             $vFullPath = $vBasePath . $vImage;
             if (!file_exists($vFullPath)) {
                 if ($this->_bUseAria2c) {
@@ -153,7 +159,11 @@ class MediaDownload
 
 
         echo "execute following:\n";
-        echo "$vCommand\n";;
+        if (realpath(getcwd()) !=
+            ($vBaseDir = realpath(Mage::getBaseDir()))){
+            echo "cd $vBaseDir\n";
+        }
+        echo "$vCommand\n";
     }
 
     protected function writeImages($aImages)

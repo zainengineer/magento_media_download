@@ -14,3 +14,4 @@
 * copy `MediaDownload.php` into root of your project
 * execute `php MediaDownload.php`
 * It will generate list and give you command to download files
+* Alternatively set `$_vFullMagentoPath` to absolute path of `app/Mage.php` and then run `php MediaDownload.php` 
