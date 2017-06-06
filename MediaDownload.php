@@ -6,10 +6,12 @@ class MediaDownload
     protected $_categoryCollection;
     protected $_vDefaultStoreCode = 'default';
     protected $_bOnlyInStock = true;
+    protected $_bOnlyEnabled = true;
     protected $_bUseAria2c = true;
     protected $_vFullMagentoPath = '';
     protected $_vRemoteBaseUrl = 'http://www.example.com/media';
     protected $_iImageCount = 0;
+    protected $_bLimitProducts = true;
 
     public function __construct()
     {
@@ -49,8 +51,11 @@ class MediaDownload
     {
         if (is_null($this->_productCollection)) {
             $this->_productCollection = Mage::getResourceModel('catalog/product_collection')
-                ->addAttributeToSelect($this->getImageAttributes())
-                ->addAttributeToFilter('status', array('eq' => Mage_Catalog_Model_Product_Status::STATUS_ENABLED));
+                ->addAttributeToSelect($this->getImageAttributes());
+            if ($this->_bOnlyEnabled){
+                $this->_productCollection
+                    ->addAttributeToFilter('status', array('eq' => Mage_Catalog_Model_Product_Status::STATUS_ENABLED));
+            }
             if ($this->_bOnlyInStock) {
                 Mage::getSingleton('cataloginventory/stock')
                     ->addInStockFilterToCollection($this->_productCollection);
@@ -79,10 +84,26 @@ class MediaDownload
         $aIds = $cProducts->getAllIds();
         $oSelect = $cProducts->getSelect()->getAdapter()->select();
         $oSelect->
-        from('catalog_product_entity_media_gallery', 'value')
-            ->where('entity_id IN (?)', $aIds);
+        from('catalog_product_entity_media_gallery', 'value');
+        if ($this->_bLimitProducts){
+            $oSelect->where('entity_id IN (?)', $aIds);
+        }
+
         $aImages = $oSelect->getAdapter()->fetchCol($oSelect);
         $aImages = array_unique($aImages);
+
+        $oSelect = $cProducts->getSelect()->getAdapter()->select();
+        $oSelect->
+        from('catalog_product_entity_varchar', 'value')
+            ->where("((value like '/%') AND ((value like '%.png') OR (value like '%.jpg') OR (value like '%.gif')))");
+        if ($this->_bLimitProducts){
+            $oSelect->where('entity_id IN (?)', $aIds);
+        }
+        $aProductImages = $oSelect->getAdapter()->fetchCol($oSelect);
+        $aProductImages = array_unique($aProductImages);
+        $aImages = array_merge($aProductImages,$aImages);
+        $aImages = array_unique($aImages);
+
         return $aImages;
     }
 
@@ -107,7 +128,7 @@ class MediaDownload
 
     protected function getMissingImages($vTarget,$aExistingList)
     {
-        $vRelativePath = "catalog/$vTarget";
+        $vRelativePath = "/catalog/$vTarget";
         if ($vTarget=='product'){
             $aImages = $this->getImages();
         }
@@ -125,13 +146,13 @@ class MediaDownload
         else{
             throw new Exception('target not correct: ' . $vTarget);
         }
-        if (!$aImages){
-            return [];
-        }
-        $this->_iImageCount += count($aImages);
 
-        $vBasePath = Mage::getBaseDir('media') . "/$vRelativePath";
+        $vBasePath = Mage::getBaseDir('media') . '/' . ltrim("$vRelativePath",'/');
+        $vBasePath = rtrim($vBasePath,'/');
         $aMissingImages = $aExistingList;
+        if (!$aImages){
+            return $aMissingImages;
+        }
         foreach ($aImages as $vImage) {
             $vImage = '/' . ltrim($vImage,'/');
             if (in_array($vImage, ['/no_selection', '/'])) {
@@ -139,9 +160,11 @@ class MediaDownload
             }
             $vFullPath = $vBasePath . $vImage;
             if (!file_exists($vFullPath)) {
+                $this->_iImageCount++;
                 if ($this->_bUseAria2c) {
-                    $aMissingImages[] = $this->_vRemoteBaseUrl . '/'. $vRelativePath . $vImage;
-                    $aMissingImages[] = "   out=" . "media/$vRelativePath" . $vImage;
+                    $vRelativeLTrim = ltrim($vRelativePath,'/');
+                    $aMissingImages[] = $this->_vRemoteBaseUrl . $vRelativePath . $vImage;
+                    $aMissingImages[] = "   out=" . trim("media/" . $vRelativeLTrim,'/') . $vImage;
                 }
                 else {
                     $aMissingImages[] = "/media/$vRelativePath" . $vImage;
