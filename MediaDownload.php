@@ -140,7 +140,7 @@ class MediaDownload
             $vFullPath = $vBasePath . $vImage;
             if (!file_exists($vFullPath)) {
                 if ($this->_bUseAria2c) {
-                    $aMissingImages[] = $this->_vRemoteBaseUrl . $vRelativePath . $vImage;
+                    $aMissingImages[] = $this->_vRemoteBaseUrl . '/'. $vRelativePath . $vImage;
                     $aMissingImages[] = "   out=" . "media/$vRelativePath" . $vImage;
                 }
                 else {
