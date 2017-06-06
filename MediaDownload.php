@@ -9,6 +9,7 @@ class MediaDownload
     protected $_bUseAria2c = true;
     protected $_vFullMagentoPath = '';
     protected $_vRemoteBaseUrl = 'http://www.example.com/media';
+    protected $_iImageCount = 0;
 
     public function __construct()
     {
@@ -117,9 +118,17 @@ class MediaDownload
             $aImages = $this->getAligentBlogImages();
             $vRelativePath = "";
         }
+        elseif($vTarget=='widget_instances'){
+            $aImages = $this->getWidgetImages();
+            $vRelativePath = "";
+        }
         else{
             throw new Exception('target not correct: ' . $vTarget);
         }
+        if (!$aImages){
+            return [];
+        }
+        $this->_iImageCount += count($aImages);
 
         $vBasePath = Mage::getBaseDir('media') . "/$vRelativePath";
         $aMissingImages = $aExistingList;
@@ -152,17 +161,31 @@ class MediaDownload
         $aImage = array_unique($aImage);
         return $aImage;
     }
+    protected function getWidgetImages()
+    {
+        $aImages = [];
+        $aWidgetParameters = Mage::getSingleton('core/resource')->getConnection('core_read')->fetchCol("select widget_parameters from widget_instance where widget_parameters like '%wysiwyg/%'");
+        foreach ($aWidgetParameters as $vParameters) {
+            $aParams = unserialize($vParameters);
+            if (!empty($aParams['image'])){
+                $aImages[] = $aParams['image'];
+            }
+        }
+        return $aImages;
+    }
 
     public function downloadImages()
     {
         $aImages = $this->getMissingImages('product',[]);
         $aImages = $this->getMissingImages('category',$aImages);
         $aImages = $this->getMissingImages('aligent_blog',$aImages);
+        $aImages = $this->getMissingImages('widget_instances',$aImages);
 
         if (!$aImages){
             echo "no missing images \n";
             return ;
         }
+        echo $this->_iImageCount  . " missing images to download\n";
         $vPath = $this->writeImages($aImages);
         $vRemoteBaseUrl = $this->_vRemoteBaseUrl;
 
