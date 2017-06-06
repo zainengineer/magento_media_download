@@ -106,17 +106,22 @@ class MediaDownload
 
     protected function getMissingImages($vTarget,$aExistingList)
     {
+        $vRelativePath = "catalog/$vTarget";
         if ($vTarget=='product'){
             $aImages = $this->getImages();
         }
-        elseif($vTarget='category'){
+        elseif($vTarget=='category'){
             $aImages = $this->getCategoryImagesList();
+        }
+        elseif($vTarget=='aligent_blog'){
+            $aImages = $this->getAligentBlogImages();
+            $vRelativePath = "";
         }
         else{
             throw new Exception('target not correct: ' . $vTarget);
         }
 
-        $vBasePath = Mage::getBaseDir('media') . "/catalog/$vTarget";
+        $vBasePath = Mage::getBaseDir('media') . "/$vRelativePath";
         $aMissingImages = $aExistingList;
         foreach ($aImages as $vImage) {
             $vImage = '/' . ltrim($vImage,'/');
@@ -126,21 +131,33 @@ class MediaDownload
             $vFullPath = $vBasePath . $vImage;
             if (!file_exists($vFullPath)) {
                 if ($this->_bUseAria2c) {
-                    $aMissingImages[] = $this->_vRemoteBaseUrl . "/catalog/$vTarget" . $vImage;
-                    $aMissingImages[] = "   out=" . "media/catalog/$vTarget" . $vImage;
+                    $aMissingImages[] = $this->_vRemoteBaseUrl . $vRelativePath . $vImage;
+                    $aMissingImages[] = "   out=" . "media/$vRelativePath" . $vImage;
                 }
                 else {
-                    $aMissingImages[] = "/media/catalog/$vTarget" . $vImage;
+                    $aMissingImages[] = "/media/$vRelativePath" . $vImage;
                 }
             }
         }
         return $aMissingImages;
+    }
+    protected function getAligentBlogImages()
+    {
+        try{
+            $aImage = Mage::getSingleton('core/resource')->getConnection('core_read')->fetchCol("select value from mageblog_post_varchar where value like 'wysiwyg/%'");
+        }
+        catch(Exception $e){
+            return[];
+        }
+        $aImage = array_unique($aImage);
+        return $aImage;
     }
 
     public function downloadImages()
     {
         $aImages = $this->getMissingImages('product',[]);
         $aImages = $this->getMissingImages('category',$aImages);
+        $aImages = $this->getMissingImages('aligent_blog',$aImages);
 
         if (!$aImages){
             echo "no missing images \n";
