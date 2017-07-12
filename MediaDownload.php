@@ -139,6 +139,10 @@ class MediaDownload
             $aImages = $this->getAligentBlogImages();
             $vRelativePath = "";
         }
+        elseif ($vTarget == 'fish_pig_banner') {
+            $aImages = $this->getFishPigBannerImages();
+            $vRelativePath = "";
+        }
         elseif($vTarget=='widget_instances'){
             $aImages = $this->getWidgetImages();
             $vRelativePath = "";
@@ -184,6 +188,28 @@ class MediaDownload
         $aImage = array_unique($aImage);
         return $aImage;
     }
+
+    protected function getFishPigBannerImages()
+    {
+        try {
+            $aImageName = Mage::getSingleton('core/resource')->getConnection('core_read')->fetchCol("select distinct image from ibanners_banner WHERE is_enabled=1");
+            $aImageName2 = Mage::getSingleton('core/resource')->getConnection('core_read')->fetchCol("select distinct image2 from ibanners_banner WHERE is_enabled=1 ");
+            $aImageName = array_merge($aImageName, $aImageName2);
+            array_unique($aImageName);
+            //remove empty value
+            array_filter($aImageName);
+            $aImage = [];
+            foreach ($aImageName as $imagePath) {
+                foreach (['std', 'retina', 'mobile'] as $vImageType) {
+                    $aImage[] = "ibanners/$vImageType{$imagePath}";
+                }
+            }
+        } catch (Exception $e) {
+            return [];
+        }
+        $aImage = array_unique($aImage);
+        return $aImage;
+    }
     protected function getWidgetImages()
     {
         $aImages = [];
@@ -203,6 +229,7 @@ class MediaDownload
         $aImages = $this->getMissingImages('category',$aImages);
         $aImages = $this->getMissingImages('aligent_blog',$aImages);
         $aImages = $this->getMissingImages('widget_instances',$aImages);
+        $aImages = $this->getMissingImages('fish_pig_banner', $aImages);
 
         if (!$aImages){
             echo "no missing images \n";

@@ -6,7 +6,7 @@
  * create project_custom/media_download_config.php
  * add content like
  *
- * $this->_vRemoteBaseUrl = 'http://www.project.com/media';
+ * $this->_vRemoteBaseUrl = 'http://www.example.com/media';
 $this->_bOnlyInStock = true;
 $this->_bOnlyEnabled = true;
 $this->_bLimitProducts = false;
