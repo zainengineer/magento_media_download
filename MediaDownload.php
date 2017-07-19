@@ -233,6 +233,7 @@ class MediaDownload
 
         if (!$aImages){
             echo "no missing images \n";
+            $this->writeImages([]);
             return ;
         }
         echo $this->_iImageCount  . " missing images to download\n";
