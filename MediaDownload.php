@@ -147,6 +147,10 @@ class MediaDownload
             $aImages = $this->getWidgetImages();
             $vRelativePath = "";
         }
+        elseif (method_exists($this, $vTarget)) {
+            $aImages = $this->$vTarget();
+            $vRelativePath = "";
+        }
         else{
             throw new Exception('target not correct: ' . $vTarget);
         }
@@ -179,8 +183,28 @@ class MediaDownload
     }
     protected function getAligentBlogImages()
     {
+        return $this->safeFetchColumn("select value from mageblog_post_varchar where value like 'wysiwyg/%'");
+    }
+    protected function multiTypeImage($aImageName, $aTypeList, $vFolder)
+    {
+        $aImage = [];
+        foreach ($aImageName as $imagePath) {
+            foreach ($aTypeList as $vImageType) {
+                $aImage[] = "$vFolder/$vImageType{$imagePath}";
+            }
+        }
+        return $aImage;
+    }
+    protected function getAligentLookImages()
+    {
+        $aImages =  $this->safeFetchColumn("SELECT image FROM collections_look where active=1");
+        $aImages = $this->multiTypeImage($aImages,['resized/','large/','original/'],'collections');
+        return $aImages;
+    }
+    protected function safeFetchColumn($vSql)
+    {
         try{
-            $aImage = Mage::getSingleton('core/resource')->getConnection('core_read')->fetchCol("select value from mageblog_post_varchar where value like 'wysiwyg/%'");
+            $aImage = Mage::getSingleton('core/resource')->getConnection('core_read')->fetchCol($vSql);
         }
         catch(Exception $e){
             return[];
@@ -188,7 +212,6 @@ class MediaDownload
         $aImage = array_unique($aImage);
         return $aImage;
     }
-
     protected function getFishPigBannerImages()
     {
         try {
@@ -230,6 +253,7 @@ class MediaDownload
         $aImages = $this->getMissingImages('aligent_blog',$aImages);
         $aImages = $this->getMissingImages('widget_instances',$aImages);
         $aImages = $this->getMissingImages('fish_pig_banner', $aImages);
+        $aImages = $this->getMissingImages('getAligentLookImages', $aImages);
 
         if (!$aImages){
             echo "no missing images \n";
