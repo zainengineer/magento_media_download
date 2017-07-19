@@ -195,9 +195,9 @@ class MediaDownload
             $aImageName = Mage::getSingleton('core/resource')->getConnection('core_read')->fetchCol("select distinct image from ibanners_banner WHERE is_enabled=1");
             $aImageName2 = Mage::getSingleton('core/resource')->getConnection('core_read')->fetchCol("select distinct image2 from ibanners_banner WHERE is_enabled=1 ");
             $aImageName = array_merge($aImageName, $aImageName2);
-            array_unique($aImageName);
+            $aImageName = array_unique($aImageName);
             //remove empty value
-            array_filter($aImageName);
+            $aImageName = array_filter($aImageName);
             $aImage = [];
             foreach ($aImageName as $imagePath) {
                 foreach (['std', 'retina', 'mobile'] as $vImageType) {
