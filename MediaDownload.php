@@ -233,12 +233,33 @@ class MediaDownload
         $aImage = array_unique($aImage);
         return $aImage;
     }
+    protected function getStaticBlockImages()
+    {
+        $aContent = $this->safeFetchColumn("select content from cms_block where is_active =1");
+        return $this->getImagesFromContentList($aContent);
+    }
+    protected function getImagesFromContentList($aContent)
+    {
+        $aImages = [];
+        foreach ($aContent as $vContent) {
+            $aMatches = [];
+            preg_match_all( '@image_url *="([^"]+)"@' , $vContent, $aMatches);
+            $aImages = array_merge($aMatches[1], $aImages);
+            $aImages = array_unique($aImages);
+        }
+        return $aImages;
+    }
+    protected function getMegaMenuImages()
+    {
+        $aContent = $this->safeFetchColumn("select header from megamenu where status=1;");
+        return $this->getImagesFromContentList($aContent);
+    }
     protected function getWidgetImages()
     {
         $aImages = [];
         $aWidgetParameters = Mage::getSingleton('core/resource')->getConnection('core_read')->fetchCol("select widget_parameters from widget_instance where widget_parameters like '%wysiwyg/%'");
         foreach ($aWidgetParameters as $vParameters) {
-            $aParams = unserialize($vParameters);
+            $aParams = @unserialize($vParameters) ?: [];
             if (!empty($aParams['image'])){
                 $aImages[] = $aParams['image'];
             }
@@ -248,12 +269,20 @@ class MediaDownload
 
     public function downloadImages()
     {
-        $aImages = $this->getMissingImages('product',[]);
-        $aImages = $this->getMissingImages('category',$aImages);
-        $aImages = $this->getMissingImages('aligent_blog',$aImages);
-        $aImages = $this->getMissingImages('widget_instances',$aImages);
-        $aImages = $this->getMissingImages('fish_pig_banner', $aImages);
-        $aImages = $this->getMissingImages('getAligentLookImages', $aImages);
+        $aImages = [];
+        $aFunctionList = [
+            'product',
+            'category',
+            'aligent_blog',
+            'widget_instances',
+            'fish_pig_banner',
+            'getAligentLookImages',
+            'getStaticBlockImages',
+            'getMegaMenuImages',
+        ];
+        foreach ($aFunctionList as $vFunction) {
+            $aImages = $this->getMissingImages($vFunction,$aImages);
+        }
 
         if (!$aImages){
             echo "no missing images \n";
