@@ -166,13 +166,18 @@ class MediaDownload
             if (in_array($vImage, ['/no_selection', '/'])) {
                 continue;
             }
-            $vFullPath = $vBasePath . $vImage;
+            $vImageFile = $vImage;
+            //remove ? param from file path to save
+            if ($iPos = strpos($vImageFile, '?')) {
+                $vImageFile = substr($vImageFile, 0, $iPos);
+            }
+            $vFullPath = $vBasePath . $vImageFile;
             if (!file_exists($vFullPath)) {
                 $this->_iImageCount++;
                 if ($this->_bUseAria2c) {
                     $vRelativeLTrim = ltrim($vRelativePath,'/');
                     $aMissingImages[] = $this->_vRemoteBaseUrl . $vRelativePath . $vImage;
-                    $aMissingImages[] = "   out=" . trim("media/" . $vRelativeLTrim,'/') . $vImage;
+                    $aMissingImages[] = "   out=" . trim("media/" . $vRelativeLTrim, '/') . $vImageFile;
                 }
                 else {
                     $aMissingImages[] = "/media/$vRelativePath" . $vImage;
@@ -245,6 +250,15 @@ class MediaDownload
             $aMatches = [];
             preg_match_all( '@image_url *="([^"]+)"@' , $vContent, $aMatches);
             $aImages = array_merge($aMatches[1], $aImages);
+            $aWMatch = array();
+            preg_match_all("/wysiwyg(.*?)(.*?)\"/", $vContent, $aWMatch);
+            if (!empty($aWMatch[0])) {
+                $aActualMatch = $aWMatch[0];
+                $aActualMatch = array_map(function ($input) {
+                    return trim(trim(trim($input, '"'), "');"));
+                }, $aActualMatch);
+                $aImages = array_merge($aActualMatch, $aImages);
+            }
             $aImages = array_unique($aImages);
         }
         return $aImages;
