@@ -217,6 +217,38 @@ class MediaDownload
         $aImage = array_unique($aImage);
         return $aImage;
     }
+
+    protected function getFeatureBanners()
+    {
+        $aAllRows = $this->safeGetAllRows("select * from net_afeature where active = 1");
+        return $this->multipleImageAttribute($aAllRows, [
+            'image_url'        => 'afeature/main/',
+            'mobile_image_url' => 'afeature/mobile/',
+            'retina_image_url' => 'afeature/main/']);
+    }
+
+    protected function safeGetAllRows($vSql)
+    {
+        try {
+            $aAllRows = Mage::getSingleton('core/resource')->getConnection('core_read')->fetchAll($vSql);
+        } catch (Exception $e) {
+            return [];
+        }
+        return $aAllRows;
+    }
+
+    protected function multipleImageAttribute($aAllRows, $aAttributeList)
+    {
+        $aAllImages = [];
+        foreach ($aAllRows as $aSingleRow) {
+            foreach ($aAttributeList as $vAttributeName => $vPrefix) {
+                if (!empty($aSingleRow[$vAttributeName])) {
+                    $aAllImages[] = $vPrefix . $aSingleRow[$vAttributeName];
+                }
+            }
+        }
+        return array_unique($aAllImages);
+    }
     protected function getFishPigBannerImages()
     {
         try {
@@ -293,6 +325,7 @@ class MediaDownload
             'getAligentLookImages',
             'getStaticBlockImages',
             'getMegaMenuImages',
+            'getFeatureBanners',
         ];
         foreach ($aFunctionList as $vFunction) {
             $aImages = $this->getMissingImages($vFunction,$aImages);
