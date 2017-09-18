@@ -336,7 +336,8 @@ class MediaDownload
             $this->writeImages([]);
             return ;
         }
-        echo $this->_iImageCount  . " missing images to download\n";
+        $vImageCount = number_format($this->_iImageCount);
+        echo $vImageCount  . " missing images to download\n";
         $vPath = $this->writeImages($aImages);
         $vRemoteBaseUrl = $this->_vRemoteBaseUrl;
 
