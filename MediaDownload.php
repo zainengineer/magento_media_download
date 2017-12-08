@@ -190,6 +190,10 @@ class MediaDownload
     {
         return $this->safeFetchColumn("select value from mageblog_post_varchar where value like 'wysiwyg/%'");
     }
+    protected function getPlaceHolderImages()
+    {
+        return $this->safeFetchColumn("select CONCAT('catalog/product/placeholder/',value) from core_config_data where path ='catalog/placeholder/image_placeholder'");
+    }
     protected function multiTypeImage($aImageName, $aTypeList, $vFolder)
     {
         $aImage = [];
@@ -326,6 +330,7 @@ class MediaDownload
             'getStaticBlockImages',
             'getMegaMenuImages',
             'getFeatureBanners',
+            'getPlaceHolderImages',
         ];
         foreach ($aFunctionList as $vFunction) {
             $aImages = $this->getMissingImages($vFunction,$aImages);
