@@ -310,8 +310,14 @@ class MediaDownload
         $aWidgetParameters = Mage::getSingleton('core/resource')->getConnection('core_read')->fetchCol("select widget_parameters from widget_instance where widget_parameters like '%wysiwyg/%'");
         foreach ($aWidgetParameters as $vParameters) {
             $aParams = @unserialize($vParameters) ?: [];
-            if (!empty($aParams['image'])){
-                $aImages[] = $aParams['image'];
+            foreach ($aParams as $vParamKey => $vParamValue) {
+                if ($vParamKey=='image'){
+                    $aImages[] = $vParamValue;
+                }
+                elseif ((is_string($vParamValue) &&
+                    strpos($vParamValue,'wysiwyg/')===0)){
+                    $aImages[] = $vParamValue;
+                }
             }
         }
         return $aImages;
